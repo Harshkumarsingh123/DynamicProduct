@@ -1,4 +1,4 @@
-package com.dynamic.product.dto;
+package com.dynamic.product.dto.request;
 
 
 import jakarta.validation.constraints.NotBlank;
@@ -12,10 +12,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CategoryRequest {
 
-    @NotBlank
+    @NotBlank(message = "Category name is required")
     private String name;
 
-    @NotBlank @Size(max = 2000)
+    @NotBlank(message = "Category description is required")
+    @Size(max = 2000, message = "Description must not exceed 2000 characters")
     private String description;
 
     private Long parentId;

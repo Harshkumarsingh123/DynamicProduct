@@ -1,9 +1,9 @@
 package com.dynamic.product.controller;
 
-import com.dynamic.product.dto.LoginRequest;
-import com.dynamic.product.dto.LoginResponse;
-import com.dynamic.product.dto.UserRequest;
-import com.dynamic.product.dto.UserResponse;
+import com.dynamic.product.dto.request.LoginRequest;
+import com.dynamic.product.dto.response.LoginResponse;
+import com.dynamic.product.dto.request.UserRequest;
+import com.dynamic.product.dto.response.UserResponse;
 import com.dynamic.product.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

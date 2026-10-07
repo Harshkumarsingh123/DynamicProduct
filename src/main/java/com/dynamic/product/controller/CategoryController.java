@@ -1,7 +1,7 @@
 package com.dynamic.product.controller;
 
-import com.dynamic.product.dto.CategoryRequest;
-import com.dynamic.product.dto.CategoryResponse;
+import com.dynamic.product.dto.request.CategoryRequest;
+import com.dynamic.product.dto.response.CategoryResponse;
 import com.dynamic.product.service.CategoryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;

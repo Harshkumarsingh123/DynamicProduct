@@ -1,16 +1,17 @@
 package com.dynamic.product.service;
 
-import com.dynamic.product.dto.LoginRequest;
-import com.dynamic.product.dto.LoginResponse;
-import com.dynamic.product.dto.UserRequest;
-import com.dynamic.product.dto.UserResponse;
+import com.dynamic.product.dto.request.LoginRequest;
+import com.dynamic.product.dto.response.LoginResponse;
+import com.dynamic.product.dto.request.UserRequest;
+import com.dynamic.product.dto.response.UserResponse;
 import com.dynamic.product.entity.Role;
 import com.dynamic.product.entity.User;
-import com.dynamic.product.exception.EmailAlreadyExistsException;
+import com.dynamic.product.exception.CustomException;
+import com.dynamic.product.mapper.UserMapper;
 import com.dynamic.product.repository.UserRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,19 +24,21 @@ public class AuthService {
     private final CustomUserDetailsService customUserDetailsService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final UserMapper userMapper;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, CustomUserDetailsService customUserDetailsService, AuthenticationManager authenticationManager, JwtService jwtService) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, CustomUserDetailsService customUserDetailsService, AuthenticationManager authenticationManager, JwtService jwtService, UserMapper userMapper) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.customUserDetailsService = customUserDetailsService;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.userMapper = userMapper;
     }
 
     public UserResponse createUser(UserRequest userRequest){
 
         if (userRepository.existsByEmail(userRequest.getEmail())) {
-            throw new RuntimeException("Email already registered");
+            throw new CustomException("Email already registered", HttpStatus.CONFLICT);
         }
 
         User user=new User();
@@ -46,7 +49,7 @@ public class AuthService {
         user.setRole(Role.USER);
 
         User savedUser=userRepository.save(user);
-        return mapToResponse(user);
+        return userMapper.toResponse(user);
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -68,16 +71,6 @@ public class AuthService {
 
         return new LoginResponse(
                 token
-        );
-    }
-
-    private UserResponse mapToResponse(User user){
-
-        return  new UserResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getPhone()
         );
     }
 }

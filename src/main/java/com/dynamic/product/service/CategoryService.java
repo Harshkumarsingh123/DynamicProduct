@@ -1,10 +1,12 @@
 package com.dynamic.product.service;
 
-import com.dynamic.product.dto.CategoryRequest;
-import com.dynamic.product.dto.CategoryResponse;
+import com.dynamic.product.dto.request.CategoryRequest;
+import com.dynamic.product.dto.response.CategoryResponse;
 import com.dynamic.product.entity.Category;
-import com.dynamic.product.exception.CategoryNotFoundException;
+import com.dynamic.product.exception.CustomException;
+import com.dynamic.product.mapper.CategoryMapper;
 import com.dynamic.product.repository.CategoryRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,9 +16,11 @@ import java.util.Optional;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final CategoryMapper categoryMapper;
 
-    public CategoryService(CategoryRepository categoryRepository) {
+    public CategoryService(CategoryRepository categoryRepository, CategoryMapper categoryMapper) {
         this.categoryRepository = categoryRepository;
+        this.categoryMapper = categoryMapper;
     }
 
 
@@ -43,23 +47,15 @@ public class CategoryService {
         category.setParent(parentCategory);
 
         Category savedCategory = categoryRepository.save(category);
-        return mapToResponse(savedCategory);
+        return categoryMapper.toResponse(savedCategory);
     }
 
-    private CategoryResponse mapToResponse(Category category) {
-        return new CategoryResponse(
-                category.getId(),
-                category.getName(),
-                category.getDescription(),
-                category.getParent() != null ? category.getParent().getId() : null
-        );
-    }
 
     public CategoryResponse updateCategory(Long id,CategoryRequest categoryRequest){
 
         Category category=categoryRepository.findById(id)
                 .orElseThrow(
-                ()->new CategoryNotFoundException("Invalid Category Id"));
+                ()->new CustomException("Invalid Category Id", HttpStatus.NOT_FOUND));
 
         Category parentCategory = null;
 
@@ -80,22 +76,22 @@ public class CategoryService {
         category.setParent(parentCategory);
 
         Category savedCategory = categoryRepository.save(category);
-        return mapToResponse(savedCategory);
+        return categoryMapper.toResponse(savedCategory);
     }
 
     public CategoryResponse getCategoryByCategoryId(Long id){
 
          Category category=categoryRepository.findById(id).orElseThrow(
-                 ()->new CategoryNotFoundException("Invalid Category Id"));
+                 ()->new CustomException("Invalid Category Id",HttpStatus.NOT_FOUND));
 
-          return mapToResponse(category);
+          return categoryMapper.toResponse(category);
     }
 
     public List<CategoryResponse> getAllCategory(){
 
         return categoryRepository.findAll()
                 .stream()
-                .map(this::mapToResponse)
+                .map(categoryMapper::toResponse)
                 .toList();
     }
 
@@ -104,8 +100,8 @@ public class CategoryService {
         try {
             categoryRepository.deleteById(id);
         }
-        catch (CategoryNotFoundException categoryNotFoundException){
-            throw new CategoryNotFoundException("Invalid Category Id");
+        catch (CustomException customException){
+            throw new CustomException("Invalid Category Id",HttpStatus.NOT_FOUND);
         }
     }
 }

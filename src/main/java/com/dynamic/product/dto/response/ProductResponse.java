@@ -1,4 +1,4 @@
-package com.dynamic.product.dto;
+package com.dynamic.product.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

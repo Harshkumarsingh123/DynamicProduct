@@ -1,4 +1,4 @@
-package com.dynamic.product.dto;
+package com.dynamic.product.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -12,9 +12,9 @@ import lombok.NoArgsConstructor;
 public class LoginRequest {
 
     @Email
-    @NotBlank
+    @NotBlank(message = "Please enter valid Email")
     private String email;
 
-    @NotBlank
+    @NotBlank(message = "Password is required")
     private String password;
 }
