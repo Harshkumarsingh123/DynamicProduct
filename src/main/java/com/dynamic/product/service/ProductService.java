@@ -10,6 +10,7 @@ import com.dynamic.product.repository.CategoryRepository;
 import com.dynamic.product.repository.ProductRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,53 +20,107 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductMapper productMapper;
+    private final FileStorageService fileStorageService;
 
-    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, ProductMapper productMapper) {
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, ProductMapper productMapper, FileStorageService fileStorageService) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.productMapper = productMapper;
+        this.fileStorageService = fileStorageService;
     }
 
+    public ProductResponse saveProduct(
+            ProductRequest productRequest,
+            MultipartFile image) {
 
-    public ProductResponse saveProduct(ProductRequest productRequest) {
-        Category category = categoryRepository.findById(productRequest.getCategoryId()).orElseThrow(
-                () -> new CustomException("Invalid Category Id", HttpStatus.NOT_FOUND));
+        Category category = categoryRepository
+                .findById(productRequest.getCategoryId())
+                .orElseThrow(() ->
+                        new CustomException(
+                                "Invalid Category Id",
+                                HttpStatus.NOT_FOUND
+                        )
+                );
+
+        String imageUrl =
+                fileStorageService.storeFile(image);
 
         Product product = new Product();
+
         product.setName(productRequest.getName());
         product.setDescription(productRequest.getDescription());
         product.setPrice(productRequest.getPrice());
-        product.setImageUrl(productRequest.getImageUrl());
-        product.setVisible(productRequest.getVisible());
-        product.setCategory(category);
 
-        Product saveProduct = productRepository.save(product);
-        return productMapper.toResponse(saveProduct);
+        product.setVisible(
+                productRequest.getVisible() != null
+                        ? productRequest.getVisible()
+                        : true
+        );
+
+        product.setCategory(category);
+        product.setImageUrl(imageUrl);
+
+        Product savedProduct =
+                productRepository.save(product);
+
+        return productMapper.toResponse(savedProduct);
     }
 
+    public ProductResponse updateProduct(
+            Long id,
+            ProductRequest productRequest,
+            MultipartFile image) {
 
-    public ProductResponse updateProduct(Long id,ProductRequest productRequest) {
+        Product product = productRepository
+                .findById(id)
+                .orElseThrow(() ->
+                        new CustomException(
+                                "Invalid Product Id",
+                                HttpStatus.NOT_FOUND
+                        )
+                );
 
-        Product product=productRepository.findById(id).orElseThrow(
-                ()->new CustomException("Invalid Product Id",HttpStatus.NOT_FOUND));
+        Category category = categoryRepository
+                .findById(productRequest.getCategoryId())
+                .orElseThrow(() ->
+                        new CustomException(
+                                "Invalid Category Id",
+                                HttpStatus.NOT_FOUND
+                        )
+                );
 
-        Category category = categoryRepository.findById(productRequest.getCategoryId()).orElseThrow(
-                () -> new CustomException("Invalid Category Id",HttpStatus.NOT_FOUND));
-
-
-        if(productRequest.getName()!=null)
+        if (productRequest.getName() != null) {
             product.setName(productRequest.getName());
-        if(productRequest.getDescription()!=null)
-            product.setDescription(productRequest.getDescription());
-        if(productRequest.getPrice()!=0)
-            product.setPrice(productRequest.getPrice());
-        if(productRequest.getImageUrl()!=null)
-            product.setImageUrl(productRequest.getImageUrl());
-            product.setVisible(productRequest.getVisible());
-            product.setCategory(category);
+        }
 
-        Product saveProduct = productRepository.save(product);
-        return productMapper.toResponse(saveProduct);
+        if (productRequest.getDescription() != null) {
+            product.setDescription(productRequest.getDescription());
+        }
+
+        if (productRequest.getPrice() != null) {
+            product.setPrice(productRequest.getPrice());
+        }
+
+        if (productRequest.getVisible() != null) {
+            product.setVisible(productRequest.getVisible());
+        }
+
+        if (productRequest.getCategoryId() != null) {
+            product.setCategory(category);
+        }
+
+        if (image != null && !image.isEmpty()) {
+
+            String imageUrl =
+                    fileStorageService.storeFile(image);
+
+            product.setImageUrl(imageUrl);
+        }
+
+        Product savedProduct =
+                productRepository.save(product);
+
+        return productMapper.toResponse(savedProduct);
     }
 
     public List<ProductResponse> getAllVisibleProduct(){

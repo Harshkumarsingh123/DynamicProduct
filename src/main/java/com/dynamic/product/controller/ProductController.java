@@ -5,8 +5,11 @@ import com.dynamic.product.dto.response.ProductResponse;
 import com.dynamic.product.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
@@ -15,21 +18,56 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    private final ObjectMapper objectMapper;
 
-    public ProductController(ProductService productService) {
+    public ProductController(ProductService productService, ObjectMapper objectMapper) {
         this.productService = productService;
+        this.objectMapper = objectMapper;
     }
 
-    @PostMapping
-    public ResponseEntity<ProductResponse> saveProduct(@Valid @RequestBody ProductRequest productRequest){
-        ProductResponse productResponse=productService.saveProduct(productRequest);
-        return new ResponseEntity<>(productResponse, HttpStatus.CREATED);
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ProductResponse createProduct(
+            @RequestPart("product") String productJson,
+            @RequestPart("image") MultipartFile image) throws Exception {
+
+        ProductRequest productRequest =
+                objectMapper.readValue(
+                        productJson,
+                        ProductRequest.class
+                );
+
+        return productService.saveProduct(
+                productRequest,
+                image
+        );
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ProductResponse> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductRequest productRequest){
-        ProductResponse productResponse=productService.updateProduct(id,productRequest);
-        return ResponseEntity.ok(productResponse);
+    @PutMapping(
+            value = "/{id}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ProductResponse> updateProduct(
+            @PathVariable Long id,
+
+            @RequestPart("product") String productJson,
+
+            @RequestPart(value = "image", required = false)
+            MultipartFile image) throws Exception {
+
+        ProductRequest productRequest =
+                objectMapper.readValue(
+                        productJson,
+                        ProductRequest.class
+                );
+
+        ProductResponse response =
+                productService.updateProduct(
+                        id,
+                        productRequest,
+                        image
+                );
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
