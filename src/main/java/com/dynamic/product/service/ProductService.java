@@ -29,7 +29,7 @@ public class ProductService {
         this.fileStorageService = fileStorageService;
     }
 
-    public String saveProduct(ProductRequest productRequest, MultipartFile image) {
+    public String saveProduct(ProductRequest productRequest) {
 
         Category category = categoryRepository
                 .findById(productRequest.getCategoryId())
@@ -41,8 +41,6 @@ public class ProductService {
                                 HttpStatus.NOT_FOUND
                         )
                 );
-
-        String imageUrl = fileStorageService.storeFile(image);
 
         Product product = new Product();
 
@@ -57,14 +55,15 @@ public class ProductService {
         );
 
         product.setCategory(category);
-        product.setImageUrl(imageUrl);
+        product.setImageUrl(productRequest.getImageUrl());
 
         productRepository.save(product);
 
         return "Product created successfully";
     }
 
-    public String updateProduct(Long id, ProductRequest productRequest, MultipartFile image) {
+    public String updateProduct(Long id, ProductRequest productRequest) {
+
         Product product = productRepository
                 .findById(id)
                 .orElseThrow(() ->
@@ -106,12 +105,8 @@ public class ProductService {
             product.setCategory(category);
         }
 
-        if (image != null && !image.isEmpty()) {
-
-            String imageUrl =
-                    fileStorageService.storeFile(image);
-
-            product.setImageUrl(imageUrl);
+        if (productRequest.getImageUrl() != null) {
+            product.setImageUrl(productRequest.getImageUrl());
         }
 
         productRepository.save(product);

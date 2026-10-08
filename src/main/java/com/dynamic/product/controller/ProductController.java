@@ -4,12 +4,11 @@ import com.dynamic.product.dto.request.ProductRequest;
 import com.dynamic.product.dto.response.ApiResponse;
 import com.dynamic.product.dto.response.ProductResponse;
 import com.dynamic.product.service.ProductService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
@@ -17,29 +16,20 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/product")
+@SecurityRequirement(name = "bearerAuth")
 public class ProductController {
 
     private final ProductService productService;
-    private final ObjectMapper objectMapper;
 
-    public ProductController(ProductService productService, ObjectMapper objectMapper) {
-
+    public ProductController(ProductService productService) {
         this.productService = productService;
-        this.objectMapper = objectMapper;
     }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse> createProduct(
-            @RequestPart("product") String productJson,
-            @RequestPart("image") MultipartFile image) throws Exception {
+    @PostMapping
+    public ResponseEntity<ApiResponse> createProduct( @Valid
+                                                      @RequestBody ProductRequest productRequest){
 
-        ProductRequest productRequest = objectMapper.readValue(productJson, ProductRequest.class);
-
-        String message = productService.saveProduct(
-                productRequest,
-                image
-        );
-
+        String message=productService.saveProduct(productRequest);
         ApiResponse response = new ApiResponse(
                 HttpStatus.CREATED.value(),
                 message,
@@ -50,18 +40,12 @@ public class ProductController {
     }
 
 
-    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse> updateProduct(
-            @PathVariable Long id,
-            @RequestPart("product") String productJson,
-            @RequestPart(value = "image", required = false
-            ) MultipartFile image)
-            throws Exception {
+    @PutMapping(value = "/{id}")
+    public ResponseEntity<ApiResponse> updateProduct(@PathVariable Long id,
+                                                     @Valid @RequestBody ProductRequest productRequest){
 
-        ProductRequest productRequest = objectMapper.readValue(productJson, ProductRequest.class);
 
-        String message = productService.updateProduct(id, productRequest, image);
-
+        String message = productService.updateProduct(id, productRequest);
         ApiResponse response = new ApiResponse(
                 HttpStatus.OK.value(),
                 message,

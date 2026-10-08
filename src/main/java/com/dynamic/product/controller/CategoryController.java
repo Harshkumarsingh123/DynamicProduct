@@ -4,6 +4,7 @@ import com.dynamic.product.dto.request.CategoryRequest;
 import com.dynamic.product.dto.response.ApiResponse;
 import com.dynamic.product.dto.response.CategoryResponse;
 import com.dynamic.product.service.CategoryService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/category")
+@SecurityRequirement(name = "bearerAuth")
 public class CategoryController {
 
     private final CategoryService categoryService;
