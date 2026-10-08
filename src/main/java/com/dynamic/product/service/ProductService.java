@@ -29,21 +29,20 @@ public class ProductService {
         this.fileStorageService = fileStorageService;
     }
 
-    public ProductResponse saveProduct(
-            ProductRequest productRequest,
-            MultipartFile image) {
+    public String saveProduct(ProductRequest productRequest, MultipartFile image) {
 
         Category category = categoryRepository
                 .findById(productRequest.getCategoryId())
                 .orElseThrow(() ->
                         new CustomException(
-                                "Invalid Category Id",
+                                "Category with ID "
+                                        + productRequest.getCategoryId()
+                                        + " not found",
                                 HttpStatus.NOT_FOUND
                         )
                 );
 
-        String imageUrl =
-                fileStorageService.storeFile(image);
+        String imageUrl = fileStorageService.storeFile(image);
 
         Product product = new Product();
 
@@ -60,31 +59,17 @@ public class ProductService {
         product.setCategory(category);
         product.setImageUrl(imageUrl);
 
-        Product savedProduct =
-                productRepository.save(product);
+        productRepository.save(product);
 
-        return productMapper.toResponse(savedProduct);
+        return "Product created successfully";
     }
 
-    public ProductResponse updateProduct(
-            Long id,
-            ProductRequest productRequest,
-            MultipartFile image) {
-
+    public String updateProduct(Long id, ProductRequest productRequest, MultipartFile image) {
         Product product = productRepository
                 .findById(id)
                 .orElseThrow(() ->
                         new CustomException(
-                                "Invalid Product Id",
-                                HttpStatus.NOT_FOUND
-                        )
-                );
-
-        Category category = categoryRepository
-                .findById(productRequest.getCategoryId())
-                .orElseThrow(() ->
-                        new CustomException(
-                                "Invalid Category Id",
+                                "Product with ID " + id + " not found",
                                 HttpStatus.NOT_FOUND
                         )
                 );
@@ -106,6 +91,18 @@ public class ProductService {
         }
 
         if (productRequest.getCategoryId() != null) {
+
+            Category category = categoryRepository
+                    .findById(productRequest.getCategoryId())
+                    .orElseThrow(() ->
+                            new CustomException(
+                                    "Category with ID "
+                                            + productRequest.getCategoryId()
+                                            + " not found",
+                                    HttpStatus.NOT_FOUND
+                            )
+                    );
+
             product.setCategory(category);
         }
 
@@ -117,10 +114,9 @@ public class ProductService {
             product.setImageUrl(imageUrl);
         }
 
-        Product savedProduct =
-                productRepository.save(product);
+        productRepository.save(product);
 
-        return productMapper.toResponse(savedProduct);
+        return "Product updated successfully";
     }
 
     public List<ProductResponse> getAllVisibleProduct(){
@@ -166,13 +162,19 @@ public class ProductService {
         return productMapper.toResponse(product);
     }
 
-    public void deleteProductById(Long id){
-        try {
-             productRepository.deleteById(id);
-        }
-        catch( CustomException exception){
-                throw new CustomException("Invalid Product Id",HttpStatus.NOT_FOUND);
-        }
+    public String deleteProductById(Long id) {
+
+        Product product = productRepository.findById(id)
+                .orElseThrow(() ->
+                        new CustomException(
+                                "Product with ID " + id + " not found",
+                                HttpStatus.NOT_FOUND
+                        )
+                );
+
+        productRepository.delete(product);
+
+        return "Product deleted successfully";
     }
 
     public List<ProductResponse> searchProducts(String keyword) {

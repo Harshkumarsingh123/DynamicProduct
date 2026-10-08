@@ -1,7 +1,11 @@
 package com.dynamic.product.exception;
 
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 
+
+@Getter
 public class ExceptionResponse {
 
     private int status;

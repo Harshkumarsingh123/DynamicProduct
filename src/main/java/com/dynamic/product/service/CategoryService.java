@@ -24,9 +24,9 @@ public class CategoryService {
     }
 
 
-    public CategoryResponse saveCategory(CategoryRequest categoryRequest) {
+    public String saveCategory(CategoryRequest categoryRequest) {
         if (categoryRequest.getName() == null || categoryRequest.getName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Category name cannot be null or empty");
+            throw new CustomException("Category name cannot be null or empty",HttpStatus.BAD_REQUEST);
         }
 
         Category parentCategory = null;
@@ -35,8 +35,12 @@ public class CategoryService {
         if (categoryRequest.getParentId() != null) {
             Optional<Category> parentOpt = categoryRepository.findById(categoryRequest.getParentId());
             if (parentOpt.isEmpty()) {
-                throw new IllegalArgumentException("Parent category with ID "
-                        + categoryRequest.getParentId() + " not found");
+                throw new CustomException(
+                        "Parent category with ID " +
+                                categoryRequest.getParentId() +
+                                " not found",
+                        HttpStatus.NOT_FOUND
+                );
             }
             parentCategory = parentOpt.get();
         }
@@ -47,11 +51,11 @@ public class CategoryService {
         category.setParent(parentCategory);
 
         Category savedCategory = categoryRepository.save(category);
-        return categoryMapper.toResponse(savedCategory);
+        return "Category created successfully";
     }
 
 
-    public CategoryResponse updateCategory(Long id,CategoryRequest categoryRequest){
+    public String updateCategory(Long id,CategoryRequest categoryRequest){
 
         Category category=categoryRepository.findById(id)
                 .orElseThrow(
@@ -62,8 +66,12 @@ public class CategoryService {
         if (categoryRequest.getParentId() != null) {
             Optional<Category> parentOpt = categoryRepository.findById(categoryRequest.getParentId());
             if (parentOpt.isEmpty()) {
-                throw new IllegalArgumentException("Parent category with ID "
-                        + categoryRequest.getParentId() + " not found");
+                throw new CustomException(
+                        "Parent category with ID " +
+                                categoryRequest.getParentId() +
+                                " not found",
+                        HttpStatus.NOT_FOUND
+                );
             }
             parentCategory = parentOpt.get();
         }
@@ -76,7 +84,7 @@ public class CategoryService {
         category.setParent(parentCategory);
 
         Category savedCategory = categoryRepository.save(category);
-        return categoryMapper.toResponse(savedCategory);
+        return "Category updated successfully";
     }
 
     public CategoryResponse getCategoryByCategoryId(Long id){
@@ -96,12 +104,17 @@ public class CategoryService {
     }
 
 
-    public void deleteCategoryByCategoryId(Long id){
-        try {
-            categoryRepository.deleteById(id);
-        }
-        catch (CustomException customException){
-            throw new CustomException("Invalid Category Id",HttpStatus.NOT_FOUND);
-        }
+    public String deleteCategoryByCategoryId(Long id) {
+
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() ->
+                        new CustomException(
+                                "Category with ID " + id + " not found",
+                                HttpStatus.NOT_FOUND
+                        )
+                );
+
+        categoryRepository.delete(category);
+        return "Category deleted successfully :"+ id;
     }
 }

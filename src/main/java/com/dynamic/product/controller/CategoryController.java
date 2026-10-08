@@ -1,6 +1,7 @@
 package com.dynamic.product.controller;
 
 import com.dynamic.product.dto.request.CategoryRequest;
+import com.dynamic.product.dto.response.ApiResponse;
 import com.dynamic.product.dto.response.CategoryResponse;
 import com.dynamic.product.service.CategoryService;
 import jakarta.validation.Valid;
@@ -8,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -21,10 +23,15 @@ public class CategoryController {
     }
 
     @PostMapping
-    public ResponseEntity<CategoryResponse> saveCategory(@Valid
+    public ResponseEntity<ApiResponse> saveCategory(@Valid
                                                          @RequestBody CategoryRequest categoryRequest){
-        CategoryResponse categoryResponse=categoryService.saveCategory(categoryRequest);
-        return new ResponseEntity<>(categoryResponse, HttpStatus.CREATED);
+        String message=categoryService.saveCategory(categoryRequest);
+        ApiResponse apiResponse = new ApiResponse(
+                HttpStatus.CREATED.value(),
+                message,
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(apiResponse, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
@@ -39,16 +46,26 @@ public class CategoryController {
         return ResponseEntity.ok(categoryResponses);
     }
 
-        @PutMapping("/{id}")
-    public ResponseEntity<CategoryResponse> updateCategoryById( @PathVariable Long id,
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse> updateCategoryById( @PathVariable Long id,
                            @Valid @RequestBody CategoryRequest categoryRequest){
-        CategoryResponse categoryResponse=categoryService.updateCategory(id,categoryRequest);
-        return ResponseEntity.ok(categoryResponse);
+        String message=categoryService.updateCategory(id,categoryRequest);
+        ApiResponse apiResponse = new ApiResponse(
+                HttpStatus.OK.value(),
+                message,
+                LocalDateTime.now()
+        );
+        return ResponseEntity.ok(apiResponse);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCategoryById(@PathVariable Long id){
-        categoryService.deleteCategoryByCategoryId(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<ApiResponse> deleteCategoryById(@PathVariable Long id){
+         String message= categoryService.deleteCategoryByCategoryId(id);
+        ApiResponse apiResponse = new ApiResponse(
+                HttpStatus.OK.value(),
+                message,
+                LocalDateTime.now()
+        );
+        return ResponseEntity.ok(apiResponse);
     }
 }

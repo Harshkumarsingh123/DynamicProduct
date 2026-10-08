@@ -1,6 +1,7 @@
 package com.dynamic.product.controller;
 
 import com.dynamic.product.dto.request.LoginRequest;
+import com.dynamic.product.dto.response.ApiResponse;
 import com.dynamic.product.dto.response.LoginResponse;
 import com.dynamic.product.dto.request.UserRequest;
 import com.dynamic.product.dto.response.UserResponse;
@@ -9,6 +10,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @RequestMapping("/api/auth")
 @RestController
@@ -21,10 +24,15 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> createUser(
+    public ResponseEntity<ApiResponse> createUser(
             @Valid @RequestBody UserRequest userRequest){
-        UserResponse userResponse=authService.createUser(userRequest);
-        return new ResponseEntity<>(userResponse, HttpStatus.CREATED);
+        String message=authService.createUser(userRequest);
+        ApiResponse apiResponse = new ApiResponse(
+                HttpStatus.CREATED.value(),
+                message,
+                LocalDateTime.now()
+        );
+        return new ResponseEntity<>(apiResponse, HttpStatus.CREATED);
     }
 
     @PostMapping("/login")

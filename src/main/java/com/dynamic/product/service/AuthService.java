@@ -11,6 +11,7 @@ import com.dynamic.product.mapper.UserMapper;
 import com.dynamic.product.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,7 +36,7 @@ public class AuthService {
         this.userMapper = userMapper;
     }
 
-    public UserResponse createUser(UserRequest userRequest){
+    public String createUser(UserRequest userRequest){
 
         if (userRepository.existsByEmail(userRequest.getEmail())) {
             throw new CustomException("Email already registered", HttpStatus.CONFLICT);
@@ -49,17 +50,22 @@ public class AuthService {
         user.setRole(Role.USER);
 
         User savedUser=userRepository.save(user);
-        return userMapper.toResponse(user);
+        return "User registered successfully";
     }
 
     public LoginResponse login(LoginRequest request) {
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
+        }
+        catch (BadCredentialsException exception){
+            throw new CustomException("Invalid Credentials",HttpStatus.UNAUTHORIZED);
+        }
 
         UserDetails userDetails =
                 customUserDetailsService.loadUserByUsername(
