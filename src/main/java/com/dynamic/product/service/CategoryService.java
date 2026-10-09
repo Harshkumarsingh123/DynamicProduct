@@ -59,7 +59,8 @@ public class CategoryService {
 
         Category category=categoryRepository.findById(id)
                 .orElseThrow(
-                ()->new CustomException("Invalid Category Id", HttpStatus.NOT_FOUND));
+                ()->new CustomException( "Category with ID " + id + " not found",
+                        HttpStatus.NOT_FOUND));
 
         Category parentCategory = null;
 
@@ -90,7 +91,8 @@ public class CategoryService {
     public CategoryResponse getCategoryByCategoryId(Long id){
 
          Category category=categoryRepository.findById(id).orElseThrow(
-                 ()->new CustomException("Invalid Category Id",HttpStatus.NOT_FOUND));
+                 ()->new CustomException("Category with ID " + id + " not found",
+                         HttpStatus.NOT_FOUND));
 
           return categoryMapper.toResponse(category);
     }

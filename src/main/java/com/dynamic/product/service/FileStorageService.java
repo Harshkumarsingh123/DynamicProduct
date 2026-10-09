@@ -19,8 +19,7 @@ public class FileStorageService {
 
     private final Path uploadPath;
 
-    public FileStorageService(
-            @Value("${file.upload-dir}") String uploadDir) {
+    public FileStorageService(@Value("${file.upload-dir}") String uploadDir) {
 
         this.uploadPath = Paths.get(uploadDir)
                 .toAbsolutePath()

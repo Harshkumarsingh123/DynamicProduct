@@ -1,8 +1,8 @@
 package com.dynamic.product.config;
 
 import com.dynamic.product.entity.Role;
-import com.dynamic.product.entity.User;
-import com.dynamic.product.repository.UserRepository;
+import com.dynamic.product.entity.AppUser;
+import com.dynamic.product.repository.AppUserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AdminInitializer implements CommandLineRunner {
 
-    private final UserRepository userRepository;
+    private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${admin.email}")
@@ -24,24 +24,24 @@ public class AdminInitializer implements CommandLineRunner {
     private String adminPassword;
 
 
-    public AdminInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
+    public AdminInitializer(AppUserRepository appUserRepository, PasswordEncoder passwordEncoder) {
+        this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public void run(String... args) throws Exception {
 
-        if(!userRepository.existsByEmail(adminEmail)){
+        if(!appUserRepository.existsByEmail(adminEmail)){
 
-            User admin=new User();
+            AppUser admin=new AppUser();
             admin.setName("System Admin");
             admin.setEmail(adminEmail);
             admin.setPhone(adminPhone);
             admin.setPassword(passwordEncoder.encode(adminPassword));
             admin.setRole(Role.ADMIN);
 
-            userRepository.save(admin);
+            appUserRepository.save(admin);
         }
     }
 }

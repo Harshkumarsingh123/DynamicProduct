@@ -23,7 +23,7 @@ public class FileController {
         this.fileStorageService = fileStorageService;
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse> uploadFile(
             @RequestParam("file") MultipartFile file) {
 
@@ -49,12 +49,8 @@ public class FileController {
         Resource resource =
                 fileStorageService.loadFile(fileName);
 
-        return ResponseEntity.ok()
-                .contentType(
-                        MediaType.parseMediaType(
-                                fileStorageService.getContentType(fileName)
-                        )
-                )
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(
+                fileStorageService.getContentType(fileName)))
                 .body(resource);
     }
 }

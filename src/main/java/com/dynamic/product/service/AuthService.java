@@ -2,13 +2,11 @@ package com.dynamic.product.service;
 
 import com.dynamic.product.dto.request.LoginRequest;
 import com.dynamic.product.dto.response.LoginResponse;
-import com.dynamic.product.dto.request.UserRequest;
-import com.dynamic.product.dto.response.UserResponse;
+import com.dynamic.product.dto.request.RegisterRequest;
+import com.dynamic.product.entity.AppUser;
 import com.dynamic.product.entity.Role;
-import com.dynamic.product.entity.User;
 import com.dynamic.product.exception.CustomException;
-import com.dynamic.product.mapper.UserMapper;
-import com.dynamic.product.repository.UserRepository;
+import com.dynamic.product.repository.AppUserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -20,37 +18,38 @@ import org.springframework.stereotype.Service;
 @Service
 public class AuthService {
 
-    private final UserRepository userRepository;
+    private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final CustomUserDetailsService customUserDetailsService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    private final UserMapper userMapper;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, CustomUserDetailsService customUserDetailsService, AuthenticationManager authenticationManager, JwtService jwtService, UserMapper userMapper) {
-        this.userRepository = userRepository;
+    public AuthService(AppUserRepository appUserRepository, PasswordEncoder passwordEncoder,
+                       CustomUserDetailsService customUserDetailsService,
+                       AuthenticationManager authenticationManager,
+                       JwtService jwtService){
+        this.appUserRepository = appUserRepository;
         this.passwordEncoder = passwordEncoder;
         this.customUserDetailsService = customUserDetailsService;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
-        this.userMapper = userMapper;
     }
 
-    public String createUser(UserRequest userRequest){
+    public String createUser(RegisterRequest registerRequest){
 
-        if (userRepository.existsByEmail(userRequest.getEmail())) {
+        if (appUserRepository.existsByEmail(registerRequest.getEmail())) {
             throw new CustomException("Email already registered", HttpStatus.CONFLICT);
         }
 
-        User user=new User();
-        user.setName(userRequest.getName());
-        user.setEmail(userRequest.getEmail());
-        user.setPhone(userRequest.getPhone());
-        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
-        user.setRole(Role.USER);
+        AppUser appUser =new AppUser();
+        appUser.setName(registerRequest.getName());
+        appUser.setEmail(registerRequest.getEmail());
+        appUser.setPhone(registerRequest.getPhone());
+        appUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        appUser.setRole(Role.USER);
 
-        User savedUser=userRepository.save(user);
-        return "User registered successfully";
+        AppUser savedAppUser = appUserRepository.save(appUser);
+        return "AppUser registered successfully";
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -67,16 +66,9 @@ public class AuthService {
             throw new CustomException("Invalid Credentials",HttpStatus.UNAUTHORIZED);
         }
 
-        UserDetails userDetails =
-                customUserDetailsService.loadUserByUsername(
-                        request.getEmail()
-                );
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(request.getEmail());
+        String token = jwtService.generateToken(userDetails);
 
-        String token =
-                jwtService.generateToken(userDetails);
-
-        return new LoginResponse(
-                token
-        );
+        return new LoginResponse(token);
     }
 }

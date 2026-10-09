@@ -1,7 +1,7 @@
 package com.dynamic.product.service;
 
-import com.dynamic.product.entity.User;
-import com.dynamic.product.repository.UserRepository;
+import com.dynamic.product.entity.AppUser;
+import com.dynamic.product.repository.AppUserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -13,29 +13,29 @@ import java.util.List;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final AppUserRepository appUserRepository;
 
-    public CustomUserDetailsService(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public CustomUserDetailsService(AppUserRepository appUserRepository) {
+        this.appUserRepository = appUserRepository;
     }
 
     @Override
     public UserDetails loadUserByUsername(String email)
             throws UsernameNotFoundException {
 
-        User user = userRepository.findByEmail(email)
+        AppUser appUser = appUserRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
-                                "User not found: " + email
+                                "AppUser not found: " + email
                         )
                 );
 
         return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword(),
+                appUser.getEmail(),
+                appUser.getPassword(),
                 List.of(
                         new SimpleGrantedAuthority(
-                                "ROLE_" + user.getRole().name()
+                                "ROLE_" + appUser.getRole().name()
                         )
                 )
         );

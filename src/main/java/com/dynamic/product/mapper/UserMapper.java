@@ -1,19 +1,19 @@
 package com.dynamic.product.mapper;
 
 import com.dynamic.product.dto.response.UserResponse;
-import com.dynamic.product.entity.User;
+import com.dynamic.product.entity.AppUser;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UserMapper {
 
-    public UserResponse toResponse(User user) {
+    public UserResponse toResponse(AppUser appUser) {
 
         return new UserResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getPhone()
+                appUser.getId(),
+                appUser.getName(),
+                appUser.getEmail(),
+                appUser.getPhone()
         );
     }
 }

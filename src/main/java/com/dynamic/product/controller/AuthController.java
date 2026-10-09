@@ -3,8 +3,7 @@ package com.dynamic.product.controller;
 import com.dynamic.product.dto.request.LoginRequest;
 import com.dynamic.product.dto.response.ApiResponse;
 import com.dynamic.product.dto.response.LoginResponse;
-import com.dynamic.product.dto.request.UserRequest;
-import com.dynamic.product.dto.response.UserResponse;
+import com.dynamic.product.dto.request.RegisterRequest;
 import com.dynamic.product.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -25,8 +24,8 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> createUser(
-            @Valid @RequestBody UserRequest userRequest){
-        String message=authService.createUser(userRequest);
+            @Valid @RequestBody RegisterRequest registerRequest){
+        String message=authService.createUser(registerRequest);
         ApiResponse apiResponse = new ApiResponse(
                 HttpStatus.CREATED.value(),
                 message,

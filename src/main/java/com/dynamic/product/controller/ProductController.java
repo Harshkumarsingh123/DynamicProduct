@@ -6,10 +6,10 @@ import com.dynamic.product.dto.response.ProductResponse;
 import com.dynamic.product.service.ProductService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -56,34 +56,23 @@ public class ProductController {
     }
 
 
-    @GetMapping
-    public ResponseEntity<List<ProductResponse>> getVisibleProduct() {
+//    @GetMapping
+//    public ResponseEntity<List<ProductResponse>> getVisibleProduct() {
+//
+//        List<ProductResponse> productResponses =
+//                productService.getAllVisibleProduct();
+//
+//        return ResponseEntity.ok(productResponses);
+//    }
 
-        List<ProductResponse> productResponses =
-                productService.getAllVisibleProduct();
-
-        return ResponseEntity.ok(productResponses);
-    }
-
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
-
-        ProductResponse productResponse =
-                productService.getProductById(id);
-
-        return ResponseEntity.ok(productResponse);
-    }
-
-
-    @GetMapping("/category/{id}")
-    public ResponseEntity<List<ProductResponse>> getProductByCategoryId(@PathVariable Long id) {
-
-        List<ProductResponse> productResponses =
-                productService.getProductByCategoryId(id);
-
-        return ResponseEntity.ok(productResponses);
-    }
+//    @GetMapping("/{id}")
+//    public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
+//
+//        ProductResponse productResponse =
+//                productService.getProductById(id);
+//
+//        return ResponseEntity.ok(productResponse);
+//    }
 
 
     @DeleteMapping("/{id}")
@@ -100,11 +89,45 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<ProductResponse>> searchProducts(@RequestParam String keyword) {
+    @GetMapping
+    public ResponseEntity<Page<ProductResponse>> getProducts(
 
-        List<ProductResponse> products =
-                productService.searchProducts(keyword);
+            @RequestParam(required = false)
+            List<Long> categoryIds,
+
+            @RequestParam(required = false)
+            Double minPrice,
+
+            @RequestParam(required = false)
+            Double maxPrice,
+
+            @RequestParam(required = false)
+            String keyword,
+
+            @RequestParam(required = false)
+            String sortBy,
+
+            @RequestParam(required = false)
+            String sortDirection,
+
+            @RequestParam(defaultValue = "0")
+            Integer page,
+
+            @RequestParam(defaultValue = "10")
+            Integer size
+    ) {
+
+        Page<ProductResponse> products =
+                productService.getProducts(
+                        categoryIds,
+                        minPrice,
+                        maxPrice,
+                        keyword,
+                        sortBy,
+                        sortDirection,
+                        page,
+                        size
+                );
 
         return ResponseEntity.ok(products);
     }
