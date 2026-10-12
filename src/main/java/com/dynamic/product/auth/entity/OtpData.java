@@ -1,3 +1,4 @@
+
 package com.dynamic.product.auth.entity;
 
 import java.time.LocalDateTime;
@@ -9,19 +10,22 @@ public class OtpData {
     private final LocalDateTime expiresAt;
     private final int failedAttempts;
     private final boolean locked;
+    private final LocalDateTime cleanupAt;
 
     public OtpData(
             String otpHash,
             LocalDateTime createdAt,
             LocalDateTime expiresAt,
             int failedAttempts,
-            boolean locked) {
+            boolean locked,
+            LocalDateTime cleanupAt) {
 
         this.otpHash = otpHash;
         this.createdAt = createdAt;
         this.expiresAt = expiresAt;
         this.failedAttempts = failedAttempts;
         this.locked = locked;
+        this.cleanupAt = cleanupAt;
     }
 
     public String getOtpHash() {
@@ -42,5 +46,9 @@ public class OtpData {
 
     public boolean isLocked() {
         return locked;
+    }
+
+    public LocalDateTime getCleanupAt() {
+        return cleanupAt;
     }
 }

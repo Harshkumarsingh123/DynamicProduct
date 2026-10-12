@@ -51,4 +51,9 @@ public interface ProductRepository extends JpaRepository<Product,Long> {
             @Param("keyword") String keyword,
             Pageable pageable
     );
+
+    Optional<Product> findByNameIgnoreCaseAndCategory_Id(
+            String name,
+            Long categoryId
+    );
 }

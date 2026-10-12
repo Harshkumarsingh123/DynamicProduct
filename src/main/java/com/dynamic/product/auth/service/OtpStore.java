@@ -1,8 +1,10 @@
 package com.dynamic.product.auth.service;
 
 import com.dynamic.product.auth.entity.OtpData;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 
@@ -29,5 +31,14 @@ public class OtpStore {
             BiFunction<String, OtpData, OtpData> function) {
 
         return otpMap.compute(email, function);
+    }
+
+    @Scheduled(fixedRate = 60 * 60 * 1000)
+    public void cleanupExpiredOtps() {
+        LocalDateTime now = LocalDateTime.now();
+
+        otpMap.entrySet().removeIf(entry ->
+                !now.isBefore(entry.getValue().getCleanupAt())
+        );
     }
 }

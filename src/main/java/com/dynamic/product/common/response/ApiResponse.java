@@ -1,3 +1,4 @@
+
 package com.dynamic.product.common.response;
 
 import lombok.AllArgsConstructor;
@@ -7,9 +8,21 @@ import java.time.LocalDateTime;
 
 @Getter
 @AllArgsConstructor
-public class ApiResponse {
+public class ApiResponse<T> {
 
     private int status;
     private String message;
     private LocalDateTime time;
+    private T data;
+
+    public static <T> ApiResponse<T> success(
+            int status, String message, T data) {
+
+        return new ApiResponse<>(
+                status,
+                message,
+                LocalDateTime.now(),
+                data
+        );
+    }
 }

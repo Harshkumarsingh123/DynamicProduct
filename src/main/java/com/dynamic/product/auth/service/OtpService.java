@@ -60,7 +60,8 @@ public class OtpService {
                 now,
                 now.plusMinutes(OTP_VALIDITY_MINUTES),
                 0,
-                false
+                false,
+                now.plusHours(24)
         );
 
         otpStore.save(normalizedEmail, otpData);
@@ -121,7 +122,8 @@ public class OtpService {
                             data.getCreatedAt(),
                             data.getExpiresAt(),
                             attempts,
-                            true
+                            true,
+                            data.getCleanupAt()
                     );
                 }
 
@@ -133,7 +135,8 @@ public class OtpService {
                         data.getCreatedAt(),
                         data.getExpiresAt(),
                         attempts,
-                        false
+                        false,
+                        data.getCleanupAt()
                 );
             }
 
