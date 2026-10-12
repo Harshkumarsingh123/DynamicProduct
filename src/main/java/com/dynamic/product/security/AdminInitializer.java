@@ -1,8 +1,9 @@
 package com.dynamic.product.security;
 
+import com.dynamic.product.auth.entity.AccountStatus;
+import com.dynamic.product.auth.entity.AppUser;
 import com.dynamic.product.auth.entity.Role;
-import com.dynamic.product.user.entity.AppUser;
-import com.dynamic.product.user.repository.AppUserRepository;
+import com.dynamic.product.auth.repository.AppUserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,10 +36,10 @@ public class AdminInitializer implements CommandLineRunner {
         if(!appUserRepository.existsByEmail(adminEmail)){
 
             AppUser admin=new AppUser();
-            admin.setName("System Admin");
             admin.setEmail(adminEmail);
-            admin.setPhone(adminPhone);
             admin.setPassword(passwordEncoder.encode(adminPassword));
+            admin.setAccountStatus(AccountStatus.ACTIVE);
+            admin.setEmailVerified(true);
             admin.setRole(Role.ADMIN);
 
             appUserRepository.save(admin);

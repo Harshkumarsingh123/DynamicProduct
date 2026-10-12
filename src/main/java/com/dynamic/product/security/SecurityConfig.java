@@ -20,26 +20,33 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomSecurityHandler customSecurityHandler;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, CustomSecurityHandler customSecurityHandler) {
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            CustomSecurityHandler customSecurityHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.customSecurityHandler = customSecurityHandler;
     }
 
     @Bean
-    PasswordEncoder passwordEncoder(){
+    PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity)throws Exception{
+    SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity)
+            throws Exception {
+
         httpSecurity
-                .csrf(csrf->csrf.disable())
-                .sessionManagement(session->session.
-                        sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .csrf(csrf -> csrf.disable())
+
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS))
+
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(customSecurityHandler)
-                        .accessDeniedHandler(customSecurityHandler)
-                )
+                        .accessDeniedHandler(customSecurityHandler))
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/swagger-ui/**",
@@ -47,19 +54,25 @@ public class SecurityConfig {
                                 "/v3/api-docs/**"
                         ).permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET,
+                        .requestMatchers(
+                                HttpMethod.GET,
                                 "/api/product/**",
                                 "/api/category/**"
                         ).permitAll()
-                        .requestMatchers("/api/product/**",
+                        .requestMatchers(
+                                "/api/product/**",
                                 "/api/category/**",
                                 "/api/file/**"
                         ).hasRole("ADMIN")
+                        .requestMatchers("/api/users/**").hasRole("USER")
                         .anyRequest().authenticated()
-                ).addFilterBefore(
+                )
+
+                .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
                 );
+
         return httpSecurity.build();
     }
 
@@ -67,8 +80,6 @@ public class SecurityConfig {
     AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration)
             throws Exception {
-
         return configuration.getAuthenticationManager();
     }
-
 }

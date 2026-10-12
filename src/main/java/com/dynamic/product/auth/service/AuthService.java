@@ -3,10 +3,12 @@ package com.dynamic.product.auth.service;
 import com.dynamic.product.auth.dto.LoginRequest;
 import com.dynamic.product.auth.dto.LoginResponse;
 import com.dynamic.product.auth.dto.RegisterRequest;
-import com.dynamic.product.user.entity.AppUser;
+import com.dynamic.product.auth.entity.AppUser;
 import com.dynamic.product.auth.entity.Role;
 import com.dynamic.product.exception.CustomException;
-import com.dynamic.product.user.repository.AppUserRepository;
+import com.dynamic.product.auth.repository.AppUserRepository;
+import com.dynamic.product.user.entity.UserProfile;
+import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -40,25 +42,41 @@ public class AuthService {
         this.otpService = otpService;
     }
 
-    public String createUser(RegisterRequest registerRequest){
+    @Transactional
+    public String createUser(RegisterRequest registerRequest) {
 
-        String email=registerRequest.getEmail().trim().toLowerCase(Locale.ROOT);
+        String email = registerRequest.getEmail()
+                .trim()
+                .toLowerCase(Locale.ROOT);
 
         if (appUserRepository.existsByEmail(email)) {
-            throw new CustomException("Email already registered", HttpStatus.CONFLICT);
+            throw new CustomException(
+                    "Email already registered",
+                    HttpStatus.CONFLICT
+            );
         }
 
-        AppUser appUser =new AppUser();
-        appUser.setName(registerRequest.getName());
+        AppUser appUser = new AppUser();
         appUser.setEmail(email);
-        appUser.setPhone(registerRequest.getPhone());
-        appUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
+        appUser.setPassword(
+                passwordEncoder.encode(registerRequest.getPassword())
+        );
         appUser.setRole(Role.USER);
         appUser.setEmailVerified(false);
 
-        appUserRepository.save(appUser);
+        AppUser savedUser = appUserRepository.save(appUser);
+
+        UserProfile profile = new UserProfile();
+        profile.setFullName(email);
+
+        savedUser.setProfile(profile);
+
+        appUserRepository.save(savedUser);
+
         otpService.createOtp(email);
-        return "Registration successful. Please check your email for the OTP to verify your account.";
+
+        return "Registration successful. Please check your email "
+                + "for the OTP to verify your account.";
     }
 
     public LoginResponse login(LoginRequest request) {

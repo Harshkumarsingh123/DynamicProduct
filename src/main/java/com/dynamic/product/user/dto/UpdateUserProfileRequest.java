@@ -17,7 +17,7 @@ public class UpdateUserProfileRequest {
 
     @NotBlank(message = "Name is required")
     @Size(max = 100, message = "Name cannot exceed 100 characters")
-    private String name;
+    private String fullName;
 
     @Pattern(
             regexp = "^[6-9][0-9]{9}$",
@@ -27,4 +27,9 @@ public class UpdateUserProfileRequest {
 
     @Size(max = 500, message = "Profile image URL cannot exceed 500 characters")
     private String profileImageUrl;
+
+    @Size(max = 1000,message = "Bio cannot exceed 500 characters")
+    private String bio;
+
 }
+

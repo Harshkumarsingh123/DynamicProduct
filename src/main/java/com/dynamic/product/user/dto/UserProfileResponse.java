@@ -12,10 +12,9 @@ import java.time.LocalDateTime;
 public class UserProfileResponse {
 
     private Long id;
-    private String name;
-    private String email;
+    private String fullName;
     private String phone;
     private String profileImageUrl;
-    private Boolean emailVerified;
+    private String bio;
     private LocalDateTime createdAt;
 }

@@ -1,6 +1,6 @@
-package com.dynamic.product.user.repository;
+package com.dynamic.product.auth.repository;
 
-import com.dynamic.product.user.entity.AppUser;
+import com.dynamic.product.auth.entity.AppUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

@@ -1,117 +1,183 @@
 package com.dynamic.product.auth.service;
 
+import com.dynamic.product.auth.entity.AccountStatus;
+import com.dynamic.product.auth.entity.AppUser;
+import com.dynamic.product.auth.entity.OtpData;
+import com.dynamic.product.auth.repository.AppUserRepository;
 import com.dynamic.product.common.email.EmailService;
-import com.dynamic.product.user.entity.AppUser;
-import com.dynamic.product.auth.entity.Otp;
 import com.dynamic.product.exception.CustomException;
-import com.dynamic.product.user.repository.AppUserRepository;
-import com.dynamic.product.auth.repository.OtpRepository;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class OtpService {
 
     private static final int MAX_FAILED_ATTEMPTS = 5;
+    private static final long OTP_VALIDITY_MINUTES = 10;
 
-    private final OtpRepository otpRepository;
-    private final SecureRandom secureRandom=new SecureRandom();
+    private final SecureRandom secureRandom = new SecureRandom();
+
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final AppUserRepository appUserRepository;
-    private final OtpAttemptService otpAttemptService;
+    private final OtpStore otpStore;
 
-    public OtpService(OtpRepository otpRepository, PasswordEncoder passwordEncoder, EmailService emailService, AppUserRepository appUserRepository, OtpAttemptService otpAttemptService) {
-        this.otpRepository = otpRepository;
+    public OtpService(
+            PasswordEncoder passwordEncoder,
+            EmailService emailService,
+            AppUserRepository appUserRepository,
+            OtpStore otpStore) {
+
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
         this.appUserRepository = appUserRepository;
-        this.otpAttemptService = otpAttemptService;
+        this.otpStore = otpStore;
     }
 
-    private String generateOtp(){
-        int number=secureRandom.nextInt(1_000_000);
-        return String.format("%06d",number);
+    private String generateOtp() {
+        return String.format(
+                "%06d", secureRandom.nextInt(1_000_000));
     }
 
-    public void createOtp(String email){
-        String otp=generateOtp();
-        LocalDateTime now=LocalDateTime.now();
+    public void createOtp(String email) {
 
-        Otp otpEntity=new Otp();
-        otpEntity.setEmail(email);
-        otpEntity.setOtpHash(passwordEncoder.encode(otp));
-        otpEntity.setCreatedAt(now);
-        otpEntity.setVerified(false);
-        otpEntity.setExpiresAt(now.plusMinutes(10));
+        final String normalizedEmail =
+                email.trim().toLowerCase(Locale.ROOT);
 
-        otpRepository.save(otpEntity);
-        emailService.sendOtpEmail(email,otp);
+        String otp = generateOtp();
+        LocalDateTime now = LocalDateTime.now();
+
+        OtpData otpData = new OtpData(
+                passwordEncoder.encode(otp),
+                now,
+                now.plusMinutes(OTP_VALIDITY_MINUTES),
+                0,
+                false
+        );
+
+        otpStore.save(normalizedEmail, otpData);
+
+        try {
+            CompletableFuture<Void> future =
+                    emailService.sendOtpEmail(normalizedEmail, otp);
+
+            future.whenComplete((result, error) -> {
+                if (error != null) {
+                    otpStore.remove(normalizedEmail, otpData);
+                }
+            });
+
+        } catch (RuntimeException exception) {
+            otpStore.remove(normalizedEmail, otpData);
+            throw exception;
+        }
     }
 
-
-    @Transactional
     public void verifyOtp(String email, String submittedOtp) {
 
-        email = email.trim().toLowerCase(Locale.ROOT);
+        final String normalizedEmail =
+                email.trim().toLowerCase(Locale.ROOT);
 
-        Otp otp = otpRepository
-                .findTopByEmailAndVerifiedFalseOrderByCreatedAtDesc(email)
-                .orElseThrow(() -> new CustomException(
-                        "No pending OTP found. Please request a new OTP.",
-                        HttpStatus.BAD_REQUEST
-                ));
+        AtomicReference<String> outcome =
+                new AtomicReference<>("MISSING");
 
-        if (Boolean.TRUE.equals(otp.getLocked())) {
-            throw new CustomException(
-                    "Too many incorrect attempts. Please request a new OTP.",
-                    HttpStatus.TOO_MANY_REQUESTS
-            );
-        }
+        otpStore.compute(normalizedEmail, (key, data) -> {
 
-        if (!LocalDateTime.now().isBefore(otp.getExpiresAt())) {
-            throw new CustomException(
-                    "OTP has expired. Please request a new OTP.",
-                    HttpStatus.BAD_REQUEST
-            );
-        }
+            if (data == null) {
+                outcome.set("MISSING");
+                return null;
+            }
 
-        if (!passwordEncoder.matches(submittedOtp, otp.getOtpHash())) {
+            LocalDateTime now = LocalDateTime.now();
 
-            int attempts = otpAttemptService.recordFailedAttempt(otp);
+            if (!now.isBefore(data.getExpiresAt())) {
+                outcome.set("EXPIRED");
+                return null;
+            }
 
-            if (attempts >= MAX_FAILED_ATTEMPTS) {
-                throw new CustomException(
-                        "Too many incorrect attempts. Please request a new OTP.",
-                        HttpStatus.TOO_MANY_REQUESTS
+            if (data.isLocked()) {
+                outcome.set("LOCKED");
+                return data;
+            }
+
+            if (!passwordEncoder.matches(
+                    submittedOtp, data.getOtpHash())) {
+
+                int attempts = data.getFailedAttempts() + 1;
+
+                if (attempts >= MAX_FAILED_ATTEMPTS) {
+                    outcome.set("LOCKED");
+
+                    return new OtpData(
+                            data.getOtpHash(),
+                            data.getCreatedAt(),
+                            data.getExpiresAt(),
+                            attempts,
+                            true
+                    );
+                }
+
+                outcome.set("INVALID:" +
+                        (MAX_FAILED_ATTEMPTS - attempts));
+
+                return new OtpData(
+                        data.getOtpHash(),
+                        data.getCreatedAt(),
+                        data.getExpiresAt(),
+                        attempts,
+                        false
                 );
             }
 
-            throw new CustomException(
-                    "Invalid OTP. Attempts remaining: "
-                            + (MAX_FAILED_ATTEMPTS - attempts),
-                    HttpStatus.BAD_REQUEST
-            );
+            outcome.set("VERIFIED");
+            return null; // Consume OTP after successful verification.
+        });
+
+        switch (outcome.get()) {
+
+            case "MISSING" ->
+                    throw new CustomException(
+                            "No pending OTP found. Please request a new OTP.",
+                            HttpStatus.BAD_REQUEST);
+
+            case "EXPIRED" ->
+                    throw new CustomException(
+                            "OTP has expired. Please request a new OTP.",
+                            HttpStatus.BAD_REQUEST);
+
+            case "LOCKED" ->
+                    throw new CustomException(
+                            "Too many incorrect attempts. Please request a new OTP.",
+                            HttpStatus.TOO_MANY_REQUESTS);
+
+            case "VERIFIED" -> {
+                AppUser user = appUserRepository
+                        .findByEmail(normalizedEmail)
+                        .orElseThrow(() -> new CustomException(
+                                "User not found.",
+                                HttpStatus.NOT_FOUND));
+
+                user.setEmailVerified(true);
+                user.setAccountStatus(AccountStatus.ACTIVE);
+                appUserRepository.save(user);
+            }
+
+            default -> {
+                int remaining = Integer.parseInt(
+                        outcome.get().substring("INVALID:".length()));
+
+                throw new CustomException(
+                        "Invalid OTP. Attempts remaining: " + remaining,
+                        HttpStatus.BAD_REQUEST);
+            }
         }
-
-        AppUser appUser = appUserRepository.findByEmail(email)
-                .orElseThrow(() -> new CustomException(
-                        "User not found.",
-                        HttpStatus.NOT_FOUND
-                ));
-
-        otp.setVerified(true);
-        appUser.setEmailVerified(true);
-
-        otpRepository.save(otp);
-        appUserRepository.save(appUser);
     }
-
-
 }

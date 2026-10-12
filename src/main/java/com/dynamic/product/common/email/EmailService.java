@@ -3,7 +3,10 @@ package com.dynamic.product.common.email;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class EmailService {
@@ -13,11 +16,13 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String senderEmail;
 
+
     public EmailService(JavaMailSender javaMailSender) {
         this.javaMailSender = javaMailSender;
     }
 
-    public void sendOtpEmail(String recipientEmail, String otp) {
+    @Async
+    public CompletableFuture<Void> sendOtpEmail(String recipientEmail, String otp) {
 
         SimpleMailMessage message = new SimpleMailMessage();
 
@@ -37,9 +42,11 @@ public class EmailService {
         );
 
         javaMailSender.send(message);
+        return CompletableFuture.completedFuture(null);
     }
 
-    public void sendWelcomeEmail(String recipientEmail) {
+    @Async
+    public CompletableFuture<Void> sendWelcomeEmail(String recipientEmail) {
 
         System.out.println("Sending welcome email to: " + recipientEmail);
         SimpleMailMessage message = new SimpleMailMessage();
@@ -58,5 +65,6 @@ public class EmailService {
         );
 
         javaMailSender.send(message);
+        return CompletableFuture.completedFuture(null);
     }
 }

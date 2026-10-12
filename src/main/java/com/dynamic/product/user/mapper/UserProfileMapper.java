@@ -1,22 +1,21 @@
 package com.dynamic.product.user.mapper;
 
 import com.dynamic.product.user.dto.UserProfileResponse;
-import com.dynamic.product.user.entity.AppUser;
+import com.dynamic.product.user.entity.UserProfile;
 import org.springframework.stereotype.Component;
 
 @Component
 public class UserProfileMapper {
 
-    public UserProfileResponse toResponse(AppUser appUser) {
+    public UserProfileResponse toResponse(UserProfile userProfile) {
 
         return new UserProfileResponse(
-                appUser.getId(),
-                appUser.getName(),
-                appUser.getEmail(),
-                appUser.getPhone(),
-                appUser.getProfileImageUrl(),
-                appUser.getEmailVerified(),
-                appUser.getCreatedAt()
+                userProfile.getId(),
+                userProfile.getFullName(),
+                userProfile.getPhone(),
+                userProfile.getProfilePictureUrl(),
+                userProfile.getBio(),
+                userProfile.getCreatedAt()
         );
     }
 }

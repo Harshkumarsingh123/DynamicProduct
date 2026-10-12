@@ -1,7 +1,8 @@
 package com.dynamic.product.auth.service;
 
-import com.dynamic.product.user.entity.AppUser;
-import com.dynamic.product.user.repository.AppUserRepository;
+import com.dynamic.product.auth.entity.AccountStatus;
+import com.dynamic.product.auth.entity.AppUser;
+import com.dynamic.product.auth.repository.AppUserRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,19 +26,21 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         AppUser appUser = appUserRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new UsernameNotFoundException(
-                                "User not found: " + email
-                        )
+                        new UsernameNotFoundException("User not found")
                 );
 
-        return User
-                .withUsername(appUser.getEmail())
+        boolean enabled =
+                Boolean.TRUE.equals(appUser.getEmailVerified())
+                        && appUser.getAccountStatus() == AccountStatus.ACTIVE;
+
+        return User.withUsername(appUser.getEmail())
                 .password(appUser.getPassword())
                 .authorities(
-                        new SimpleGrantedAuthority("ROLE_"+ appUser.getRole().name())
+                        new SimpleGrantedAuthority(
+                                "ROLE_" + appUser.getRole().name()
+                        )
                 )
-                .disabled(!Boolean.TRUE.equals(appUser.getEmailVerified()))
+                .disabled(!enabled)
                 .build();
-
     }
 }
