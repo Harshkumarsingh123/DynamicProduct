@@ -1,10 +1,7 @@
 
 package com.dynamic.product.auth.controller;
 
-import com.dynamic.product.auth.dto.LoginRequest;
-import com.dynamic.product.auth.dto.LoginResponse;
-import com.dynamic.product.auth.dto.RegisterRequest;
-import com.dynamic.product.auth.dto.VerifyOtpRequest;
+import com.dynamic.product.auth.dto.*;
 import com.dynamic.product.auth.service.AuthService;
 import com.dynamic.product.auth.service.OtpService;
 import com.dynamic.product.common.email.EmailService;
@@ -16,6 +13,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RequestMapping("/api/auth")
@@ -99,4 +97,77 @@ public class AuthController {
 
         return ResponseEntity.ok(response);
     }
+
+
+    @PatchMapping("/change-password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+                @Valid @RequestBody ChangePasswordRequest request,
+                Authentication authentication) {
+
+        String message = authService.changePassword(
+                    authentication.getName(),
+                    request
+            );
+
+        ApiResponse<Void> response = ApiResponse.success(
+                    HttpStatus.OK.value(),
+                    message,
+                    null
+            );
+
+        return ResponseEntity.ok(response);
+        }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+
+        otpService.createPasswordResetOtp(request.getEmail());
+
+        ApiResponse<Void> response = ApiResponse.success(
+                HttpStatus.OK.value(),
+                "If an account exists for this email, a password reset OTP has been sent.",
+                null
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/verify-reset-otp")
+    public ResponseEntity<ApiResponse<String>> verifyResetOtp(
+            @Valid @RequestBody VerifyResetOtpRequest request) {
+
+        String resetToken = otpService.verifyPasswordResetOtp(
+                request.getEmail(),
+                request.getOtp()
+        );
+
+        ApiResponse<String> response = ApiResponse.success(
+                HttpStatus.OK.value(),
+                "OTP verified. Use the reset token to set a new password.",
+                resetToken
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+
+        otpService.resetPassword(
+                request.getResetToken(),
+                request.getNewPassword(),
+                request.getConfirmPassword()
+        );
+
+        ApiResponse<Void> response = ApiResponse.success(
+                HttpStatus.OK.value(),
+                "Password reset successfully.",
+                null
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
 }

@@ -2,11 +2,9 @@ package com.dynamic.product.product.specification;
 
 import com.dynamic.product.product.entity.Product;
 import com.dynamic.product.category.entity.Category;
-
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
-
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;

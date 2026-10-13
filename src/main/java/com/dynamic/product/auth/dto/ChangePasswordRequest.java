@@ -1,5 +1,5 @@
 
-package com.dynamic.product.auth.entity;
+package com.dynamic.product.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

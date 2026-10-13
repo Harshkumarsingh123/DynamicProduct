@@ -1,6 +1,7 @@
 package com.dynamic.product.auth.service;
 
 import com.dynamic.product.auth.entity.OtpData;
+import com.dynamic.product.auth.entity.ResetTokenData;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,10 @@ import java.util.function.BiFunction;
 public class OtpStore {
 
     private final ConcurrentHashMap<String, OtpData> otpMap =
+            new ConcurrentHashMap<>();
+
+    // Key is the SHA-256 hash of the reset token, not the raw token.
+    private final ConcurrentHashMap<String, ResetTokenData> resetTokenMap =
             new ConcurrentHashMap<>();
 
     public OtpData get(String email) {
@@ -29,8 +34,21 @@ public class OtpStore {
     public OtpData compute(
             String email,
             BiFunction<String, OtpData, OtpData> function) {
-
         return otpMap.compute(email, function);
+    }
+
+    public void saveResetToken(
+            String tokenHash,
+            ResetTokenData tokenData) {
+        resetTokenMap.put(tokenHash, tokenData);
+    }
+
+    public ResetTokenData getResetToken(String tokenHash) {
+        return resetTokenMap.get(tokenHash);
+    }
+
+    public ResetTokenData consumeResetToken(String tokenHash) {
+        return resetTokenMap.remove(tokenHash);
     }
 
     @Scheduled(fixedRate = 60 * 60 * 1000)
@@ -38,7 +56,9 @@ public class OtpStore {
         LocalDateTime now = LocalDateTime.now();
 
         otpMap.entrySet().removeIf(entry ->
-                !now.isBefore(entry.getValue().getCleanupAt())
-        );
+                !now.isBefore(entry.getValue().getCleanupAt()));
+
+        resetTokenMap.entrySet().removeIf(entry ->
+                !now.isBefore(entry.getValue().getCleanupAt()));
     }
 }

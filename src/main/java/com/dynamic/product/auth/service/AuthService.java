@@ -4,6 +4,7 @@ import com.dynamic.product.auth.dto.LoginRequest;
 import com.dynamic.product.auth.dto.LoginResponse;
 import com.dynamic.product.auth.dto.RegisterRequest;
 import com.dynamic.product.auth.entity.AppUser;
+import com.dynamic.product.auth.dto.ChangePasswordRequest;
 import com.dynamic.product.auth.entity.Role;
 import com.dynamic.product.exception.CustomException;
 import com.dynamic.product.auth.repository.AppUserRepository;
@@ -18,6 +19,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Locale;
 
 @Service
@@ -63,6 +65,7 @@ public class AuthService {
         );
         appUser.setRole(Role.USER);
         appUser.setEmailVerified(false);
+        appUser.setPromotionalConsent(Boolean.TRUE.equals(registerRequest.getPromotionalConsent()));
 
         AppUser savedUser = appUserRepository.save(appUser);
 
@@ -101,6 +104,55 @@ public class AuthService {
         UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
         String token = jwtService.generateToken(userDetails);
 
+        AppUser appUser=appUserRepository.findByEmail(email).orElseThrow(
+                ()->new CustomException("User not found" , HttpStatus.NOT_FOUND));
+        appUser.setLastLoginAt(LocalDateTime.now());
+        appUserRepository.save(appUser);
         return new LoginResponse(token);
     }
+
+
+    @Transactional
+    public String changePassword(
+            String email,
+            ChangePasswordRequest request) {
+
+        String normalizedEmail =
+                email.trim().toLowerCase(Locale.ROOT);
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new CustomException(
+                    "New password and confirm password do not match",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        AppUser user = appUserRepository
+                .findByEmail(normalizedEmail)
+                .orElseThrow(() -> new CustomException(
+                        "User not found",
+                        HttpStatus.NOT_FOUND
+                ));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new CustomException(
+                    "Current password is incorrect",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new CustomException(
+                    "New password must differ from the current password",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        appUserRepository.save(user);
+
+        return "Password changed successfully";
+    }
+
 }

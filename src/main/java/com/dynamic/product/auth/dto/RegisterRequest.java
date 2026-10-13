@@ -23,4 +23,5 @@ public class RegisterRequest {
             message = "Password must be between 8 and 72 characters"
     )
     private String password;
+    private Boolean promotionalConsent = false;
 }

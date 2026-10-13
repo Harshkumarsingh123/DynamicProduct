@@ -11,6 +11,7 @@ public class OtpData {
     private final int failedAttempts;
     private final boolean locked;
     private final LocalDateTime cleanupAt;
+    private final OtpPurpose purpose;
 
     public OtpData(
             String otpHash,
@@ -18,7 +19,8 @@ public class OtpData {
             LocalDateTime expiresAt,
             int failedAttempts,
             boolean locked,
-            LocalDateTime cleanupAt) {
+            LocalDateTime cleanupAt,
+            OtpPurpose purpose) {
 
         this.otpHash = otpHash;
         this.createdAt = createdAt;
@@ -26,6 +28,7 @@ public class OtpData {
         this.failedAttempts = failedAttempts;
         this.locked = locked;
         this.cleanupAt = cleanupAt;
+        this.purpose = purpose;
     }
 
     public String getOtpHash() {
@@ -50,5 +53,9 @@ public class OtpData {
 
     public LocalDateTime getCleanupAt() {
         return cleanupAt;
+    }
+
+    public OtpPurpose getPurpose() {
+        return purpose;
     }
 }

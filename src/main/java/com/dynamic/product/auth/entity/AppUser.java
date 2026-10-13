@@ -54,6 +54,14 @@ public class AppUser {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "last_login_at")
+    private LocalDateTime lastLoginAt;
+
+    @Column(nullable = false)
+    private Boolean promotionalConsent = false;
+
+    @Column(name = "last_inactivity_campaign_sent_at")
+    private LocalDateTime lastInactivityCampaignSentAt;
     @OneToOne(
             mappedBy = "user",
             cascade = CascadeType.ALL,
