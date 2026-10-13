@@ -9,10 +9,10 @@ import com.dynamic.product.product.mapper.ProductMapper;
 import com.dynamic.product.category.repository.CategoryRepository;
 import com.dynamic.product.product.repository.ProductRepository;
 import com.dynamic.product.common.storage.FileStorageService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import com.dynamic.product.product.specification.ProductSpecification;
+import com.dynamic.product.product.util.FuzzySearchUtil;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -189,6 +189,8 @@ public class ProductService {
 //                .toList();
 //    }
 
+
+
     public Page<ProductResponse> getProducts(
             List<Long> categoryIds,
             Double minPrice,
@@ -199,33 +201,101 @@ public class ProductService {
             Integer page,
             Integer size) {
 
-        boolean filterCategories =
-                categoryIds != null && !categoryIds.isEmpty();
-        if (!filterCategories) {
-            categoryIds = List.of(-1L);
-        } else {
-            categoryIds = getCategoryAndChildren(categoryIds);
+        if (page == null || page < 0) {
+            throw new CustomException("Page must be zero or greater", HttpStatus.BAD_REQUEST);
         }
 
-        keyword = (keyword == null || keyword.isBlank()) ? "" : keyword.trim();
+        if (size == null || size <= 0) {
+            throw new CustomException("Page size must be greater than zero",HttpStatus.BAD_REQUEST);
+        }
 
-        boolean filterKeyword = !keyword.isEmpty();
+        if (minPrice != null && minPrice < 0) {
+            throw new CustomException("Minimum price cannot be negative", HttpStatus.BAD_REQUEST);
+        }
+
+        if (maxPrice != null && maxPrice < 0) {
+            throw new CustomException("Maximum price cannot be negative", HttpStatus.BAD_REQUEST);
+        }
+
+        if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
+            throw new CustomException("Minimum price cannot exceed maximum price", HttpStatus.BAD_REQUEST);
+        }
+
+
+        if (categoryIds != null && !categoryIds.isEmpty()) {
+            categoryIds = getCategoryAndChildren(categoryIds);
+        } else {
+            categoryIds = null;
+        }
+
+        keyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
+
 
         Sort sort = getSort(sortBy, sortDirection);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<Product> products = productRepository.filterProducts(
-                filterCategories,
-                categoryIds,
-                minPrice,
-                maxPrice,
-                filterKeyword,
-                keyword,
-                pageable
+        Specification<Product> specification =
+                ProductSpecification.filterProducts(
+                        categoryIds,
+                        minPrice,
+                        maxPrice,
+                        keyword
+                );
+
+        Page<Product> products =
+                productRepository.findAll(specification, pageable);
+
+
+        if (keyword == null || products.getTotalElements() > 0) {
+            return products.map(productMapper::toResponse);
+        }
+
+        Specification<Product> candidateSpecification =
+                ProductSpecification.filterProducts(
+                        categoryIds,
+                        minPrice,
+                        maxPrice,
+                        null
+                );
+
+        List<Product> candidates =
+                productRepository.findAll(candidateSpecification, sort);
+
+
+        String searchKeyword = keyword;
+
+        List<Product> fuzzyMatches = candidates.stream()
+                .filter(product ->
+                        FuzzySearchUtil.isFuzzyMatch(
+                                searchKeyword,
+                                product.getName()
+                        )
+                                || FuzzySearchUtil.isFuzzyMatch(
+                                searchKeyword,
+                                product.getDescription()
+                        )
+                                || (product.getCategory() != null
+                                && FuzzySearchUtil.isFuzzyMatch(
+                                searchKeyword,
+                                product.getCategory().getName()
+                        ))
+                )
+                .toList();
+
+        int start = (int) Math.min(pageable.getOffset(), fuzzyMatches.size());
+        int end = (int) Math.min((long) start + pageable.getPageSize(), fuzzyMatches.size());
+
+        List<Product> pageContent = fuzzyMatches.subList(start, end);
+        Page<Product> fuzzyPage = new PageImpl<>(
+                pageContent,
+                pageable,
+                fuzzyMatches.size()
         );
 
-        return products.map(productMapper::toResponse);
+        return fuzzyPage.map(productMapper::toResponse);
     }
+
+
     private Sort getSort(String sortBy, String sortDirection) {
 
         if ("latest".equalsIgnoreCase(sortBy)) {
